@@ -12,7 +12,6 @@ from io import BytesIO
 
 app = Flask(__name__)
 
-# Initialize the summarizer pipeline
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=0)
 
 # Create a folder for storing generated PDFs if it doesn't exist
@@ -57,8 +56,7 @@ def summarize_text(text):
     
     # Combine the summaries into one final summary
     final_summary = " ".join(summarized_texts)
-    
-    # If the final summary is shorter than 100 words, we add more summarization (optional)
+
     if len(final_summary.split()) < 100:
         final_summary += " " + summarizer(final_summary, max_length=100, min_length=50, do_sample=False)[0]["summary_text"]
 
@@ -83,25 +81,20 @@ def generate_pdf(summary_text, filename="summary.pdf"):
     # Set font for the summary text
     c.setFont("Helvetica", 10)
 
-    # Adjust the wrapping to allow a wider right margin
-    # Change the width to 80 to extend the right margin (default 90 for more narrow wrapping)
-    wrapped_text = textwrap.wrap(summary_text, width=120)  # Reduce the wrap width to increase right margin
+    wrapped_text = textwrap.wrap(summary_text, width=120) 
 
-    # Set starting y position for the text
     y_position = height - 60
 
-    # Line spacing (distance between each line of text)
-    line_height = 12  # Adjust line height to space out text
+    line_height = 12 
 
-    # Add text to PDF, taking care of page overflow
+    
     for line in wrapped_text:
-        # Check if the text has reached the bottom of the page
         if y_position < 40:
             c.showPage()  # Start a new page
-            c.setFont("Helvetica", 10)  # Reset font for the new page
-            y_position = height - 40  # Reset position for new page
+            c.setFont("Helvetica", 10)  
+            y_position = height - 40 
 
-        c.drawString(30, y_position, line)  # Draw the line of text at the current position
+        c.drawString(30, y_position, line)  
         y_position -= line_height  # Move down for the next line
 
     # Save the PDF
@@ -147,8 +140,6 @@ def summarize():
 
             # Summarize the extracted text
             summary = summarize_text(text)
-            
-            # Generate the PDF from the summary
             pdf_file_path = generate_pdf(summary, filename=f"{os.path.splitext(file.filename)[0]}_summary.pdf")
             
             # Optionally, remove the file after processing
@@ -173,8 +164,7 @@ def summarizeMultipart():
         if not files:
             return "No selected files", 400
         
-        # Process each uploaded PDF
-        pdf_paths = []  # List to store paths of generated PDFs
+        pdf_paths = [] 
         for file in files:
             if file.filename == "":
                 continue
@@ -193,10 +183,8 @@ def summarizeMultipart():
             pdf_file_path = generate_pdf(summary, filename=f"{os.path.splitext(file.filename)[0]}_summary.pdf")
             pdf_paths.append(pdf_file_path)
             
-            # Optionally, remove the file after processing
             os.remove(file_path)
 
-        # If multiple PDFs are uploaded, create a zip file
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for pdf_path in pdf_paths:
@@ -205,8 +193,6 @@ def summarizeMultipart():
         
         # Set the position of the buffer to the beginning
         zip_buffer.seek(0)
-        
-        # Provide the zip file for download
         return send_file(zip_buffer, as_attachment=True, download_name="summarized_pdfs.zip", mimetype="application/zip") 
 
     except Exception as e:
