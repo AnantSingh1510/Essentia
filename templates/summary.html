@@ -10,11 +10,56 @@
     <div class="container">
         <h1 class="title">Summary</h1>
         <div class="summary-box">
-            <p>{{ summary }}</p>
+            <p id="main-summary">{{ summary }}</p>
             <br>
+            <button onclick=textToSpeech() class="btn download-button">Listen to Summary</button>
             <button><a href="{{ url_for('download_pdf', filename=pdf_filename) }}" class="btn download-button">Download PDF</a></button>
         </div>
         <a href="/" class="back-link">Back to Upload</a>
     </div>
+
+    <script>
+        let speechUtterance = null;
+
+        // Function to convert text to speech
+        function textToSpeech() {
+            // Get the text from the div
+            const text = document.getElementById("main-summary").innerText;
+
+            // Check if the Web Speech API is supported
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech first
+                window.speechSynthesis.cancel();
+
+                // Create a new speech utterance
+                speechUtterance = new SpeechSynthesisUtterance(text);
+                speechUtterance.lang = 'en-US'; // Set the language
+                speechUtterance.rate = 1; // Set the speed (1 is normal)
+                speechUtterance.pitch = 1; // Set the pitch (1 is normal)
+
+                // Speak the text
+                window.speechSynthesis.speak(speechUtterance);
+            } else {
+                alert("Sorry, your browser does not support text-to-speech!");
+            }
+        }
+
+        // Add event listener to the button
+        document.getElementById("speakButton").addEventListener("click", textToSpeech);
+
+        // Stop speech on Back button navigation
+        window.addEventListener("popstate", () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any ongoing speech
+            }
+        });
+
+        // Optional: Stop speech on page unload
+        window.addEventListener("beforeunload", () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        });
+    </script>
 </body>
 </html>
